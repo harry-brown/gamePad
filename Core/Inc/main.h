@@ -61,7 +61,7 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 
 #define BLINK_PERIOD_MS				500
-#define INPUT_POLL_PERIOD_MS		10
+#define INPUT_POLL_PERIOD_MS		1
 #define LIGHTBAR_UPDATE_PERIOD_MS	10
 
 /* USER CODE END Private defines */

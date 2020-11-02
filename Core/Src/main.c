@@ -52,7 +52,7 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 /* USER CODE BEGIN PV */
 
 uint16_t blinkTimer = 0;
-uint16_t inputPollTimer = 5;			//Initialise as 5 so that calls fall 5ms either side of blink calls, instead of overlapping every time
+uint16_t inputPollTimer = 0;			//Initialise as 5 so that calls fall 5ms either side of blink calls, instead of overlapping every time
 uint16_t lightbarUpdateTimer = 0;		//
 
 char outBuff[64] = {0};
