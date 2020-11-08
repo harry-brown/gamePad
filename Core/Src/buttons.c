@@ -9,8 +9,11 @@
 
 uint16_t rawButtonStatus = 0;
 uint16_t debouncedButtonStatus = 0;
+uint16_t lastDebouncedButtonStatus = 0;
+uint16_t buttonChange = 0;
 
 uint8_t debounceArray[10] = {0};
+uint8_t longPressArray[10] = {0};
 
 void buttons_update(void)
 {
@@ -32,6 +35,9 @@ void buttons_update(void)
 		debouncedButtonStatus |= (debounceArray[i] > DEBOUNCE ? 1 << i : 0);
 		debouncedButtonStatus &= (debounceArray[i] == 0 ? ~(1 << i) : ~0);
 	}
+
+	buttonChange = debouncedButtonStatus ^ lastDebouncedButtonStatus;
+	lastDebouncedButtonStatus = debouncedButtonStatus;
 }
 
 void buttons_getStatus(uint16_t* status)
@@ -39,4 +45,18 @@ void buttons_getStatus(uint16_t* status)
 	*status = debouncedButtonStatus;
 }
 
+void buttons_process(void)
+{
+	if (buttonChange)
+	{
+		if (buttonChange & (1 << 9))
+		{
+			//LEFT
+		}
+		if (buttonChange & (1 << 9))
+		{
+			//LEFT
+		}
+	}
+}
 

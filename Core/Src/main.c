@@ -132,6 +132,7 @@ int main(void)
 	  {
 		  //read button inputs
 		  buttons_update();
+		  buttons_process();
 		  buttons_getStatus(&temp);
 		  lightbar_set(temp);
 		  inputPollTimer -= INPUT_POLL_PERIOD_MS;

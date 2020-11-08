@@ -16,7 +16,22 @@
 #define max(a,b) ( a > b ? a : b )
 #define min(a,b) ( a > b ? b : a )
 
-void lightbar_update(void);
-void lightbar_getStatus(uint16_t* status);
+enum button {
+	buttonA,
+	buttonX,
+	buttonB,
+	buttonB,
+	buttonY,
+	buttonP,
+	buttonM,
+	buttonR,
+	buttonU,
+	buttonD,
+	buttonL
+};
+
+void buttons_update(void);
+void buttons_getStatus(uint16_t* status);
+void buttons_process(void);
 
 #endif /* INC_BUTTONS_H_ */
