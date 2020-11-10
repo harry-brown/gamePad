@@ -17,17 +17,9 @@ uint8_t longPressArray[10] = {0};
 
 void buttons_update(void)
 {
-	rawButtonStatus  = ~(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) << 9);
-	rawButtonStatus &= ~(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_6) << 8);
-	rawButtonStatus &= ~(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5) << 7);
-	rawButtonStatus &= ~(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4) << 6);
-	rawButtonStatus &= ~(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) << 5);
-
-	rawButtonStatus &= ~(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9) << 4);
-	rawButtonStatus &= ~(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_8) << 3);
-	rawButtonStatus &= ~(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7) << 2);
-	rawButtonStatus &= ~(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6) << 1);
-	rawButtonStatus &= ~(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_5) << 0);
+	rawButtonStatus = ~((GPIOA->IDR & (GPIO_PIN_7 | GPIO_PIN_6 | GPIO_PIN_5 | GPIO_PIN_4)) << 2) &
+			  	  	  ~((GPIOA->IDR & (GPIO_PIN_1)) << 4) &
+					  ~((GPIOB->IDR & (GPIO_PIN_9 | GPIO_PIN_8 | GPIO_PIN_7 | GPIO_PIN_6 | GPIO_PIN_5)) >> 5);
 
 	for (int i = 0; i < 10; i++)
 	{

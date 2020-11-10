@@ -20,7 +20,6 @@ enum button {
 	buttonA,
 	buttonX,
 	buttonB,
-	buttonB,
 	buttonY,
 	buttonP,
 	buttonM,
