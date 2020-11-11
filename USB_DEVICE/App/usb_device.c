@@ -55,6 +55,30 @@ USBD_HandleTypeDef hUsbDeviceFS;
  */
 /* USER CODE BEGIN 1 */
 
+struct mouseHID_t {
+	  uint8_t buttons;
+	  int8_t x;
+	  int8_t y;
+	  int8_t wheel;
+};
+
+struct mouseHID_t mouseHID;
+
+void usbInit(void)
+{
+	mouseHID.buttons = 0;
+	mouseHID.x = 10;
+	mouseHID.y = 0;
+	mouseHID.wheel = 0;
+}
+
+void usbSendIt(void)
+{
+	// Send HID report
+	mouseHID.x = 10;
+	USBD_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&mouseHID, sizeof(struct mouseHID_t));
+}
+
 /* USER CODE END 1 */
 
 /**
