@@ -19,6 +19,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
+#include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -43,12 +45,50 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-TIM_HandleTypeDef htim10;
-
 UART_HandleTypeDef huart2;
 
-PCD_HandleTypeDef hpcd_USB_OTG_FS;
-
+/* Definitions for usbTask */
+osThreadId_t usbTaskHandle;
+const osThreadAttr_t usbTask_attributes = {
+  .name = "usbTask",
+  .priority = (osPriority_t) osPriorityAboveNormal,
+  .stack_size = 128 * 4
+};
+/* Definitions for ledTask */
+osThreadId_t ledTaskHandle;
+const osThreadAttr_t ledTask_attributes = {
+  .name = "ledTask",
+  .priority = (osPriority_t) osPriorityBelowNormal,
+  .stack_size = 128 * 4
+};
+/* Definitions for radioTask */
+osThreadId_t radioTaskHandle;
+const osThreadAttr_t radioTask_attributes = {
+  .name = "radioTask",
+  .priority = (osPriority_t) osPriorityAboveNormal,
+  .stack_size = 128 * 4
+};
+/* Definitions for heartbeatTask */
+osThreadId_t heartbeatTaskHandle;
+const osThreadAttr_t heartbeatTask_attributes = {
+  .name = "heartbeatTask",
+  .priority = (osPriority_t) osPriorityLow,
+  .stack_size = 128 * 4
+};
+/* Definitions for uartTask */
+osThreadId_t uartTaskHandle;
+const osThreadAttr_t uartTask_attributes = {
+  .name = "uartTask",
+  .priority = (osPriority_t) osPriorityBelowNormal,
+  .stack_size = 128 * 4
+};
+/* Definitions for buttonInputTask */
+osThreadId_t buttonInputTaskHandle;
+const osThreadAttr_t buttonInputTask_attributes = {
+  .name = "buttonInputTask",
+  .priority = (osPriority_t) osPriorityLow,
+  .stack_size = 128 * 4
+};
 /* USER CODE BEGIN PV */
 
 uint16_t blinkTimer = 0;
@@ -64,9 +104,14 @@ uint16_t temp;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_TIM10_Init(void);
 static void MX_USART2_UART_Init(void);
-static void MX_USB_OTG_FS_PCD_Init(void);
+void StartUSBTask(void *argument);
+void StartLEDTask(void *argument);
+void StartRadioTask(void *argument);
+void StartHeartbeatTask(void *argument);
+void StartUARTTask(void *argument);
+void StartButtonInputTask(void *argument);
+
 /* USER CODE BEGIN PFP */
 void debugPrint(char _out[]);
 /* USER CODE END PFP */
@@ -83,8 +128,6 @@ void debugPrint(char _out[]);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
-	uint8_t counter = 0;
 
   /* USER CODE END 1 */
 
@@ -106,43 +149,61 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_TIM10_Init();
   MX_USART2_UART_Init();
-  MX_USB_OTG_FS_PCD_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
 
+  /* Init scheduler */
+  osKernelInitialize();
+
+  /* USER CODE BEGIN RTOS_MUTEX */
+  /* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  /* USER CODE END RTOS_QUEUES */
+
+  /* Create the thread(s) */
+  /* creation of usbTask */
+  usbTaskHandle = osThreadNew(StartUSBTask, NULL, &usbTask_attributes);
+
+  /* creation of ledTask */
+  ledTaskHandle = osThreadNew(StartLEDTask, NULL, &ledTask_attributes);
+
+  /* creation of radioTask */
+  radioTaskHandle = osThreadNew(StartRadioTask, NULL, &radioTask_attributes);
+
+  /* creation of heartbeatTask */
+  heartbeatTaskHandle = osThreadNew(StartHeartbeatTask, NULL, &heartbeatTask_attributes);
+
+  /* creation of uartTask */
+  uartTaskHandle = osThreadNew(StartUARTTask, NULL, &uartTask_attributes);
+
+  /* creation of buttonInputTask */
+  buttonInputTaskHandle = osThreadNew(StartButtonInputTask, NULL, &buttonInputTask_attributes);
+
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+  /* USER CODE END RTOS_THREADS */
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if ( blinkTimer >= BLINK_PERIOD_MS )
-	  {
-		  //toggle pc13
-		  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-		  sprintf(outBuff, "toggle, #%d, %d\n\r", counter++, blinkTimer);
-		  debugPrint(outBuff);
-
-		  blinkTimer -= BLINK_PERIOD_MS;
-	  }
-
-
-	  if ( inputPollTimer >= INPUT_POLL_PERIOD_MS )
-	  {
-		  //read button inputs
-		  buttons_update();
-		  buttons_process();
-		  buttons_getStatus(&temp);
-		  lightbar_set(temp);
-		  inputPollTimer -= INPUT_POLL_PERIOD_MS;
-	  }
-
-	  if ( lightbarUpdateTimer >= LIGHTBAR_UPDATE_PERIOD_MS )
-	  {
-		  lightbar_update();
-		  lightbarUpdateTimer -= LIGHTBAR_UPDATE_PERIOD_MS;
-	  }
 
     /* USER CODE END WHILE */
 
@@ -171,8 +232,8 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 16;
-  RCC_OscInitStruct.PLL.PLLN = 215;
+  RCC_OscInitStruct.PLL.PLLM = 25;
+  RCC_OscInitStruct.PLL.PLLN = 336;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4;
   RCC_OscInitStruct.PLL.PLLQ = 7;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -192,39 +253,6 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-}
-
-/**
-  * @brief TIM10 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM10_Init(void)
-{
-
-  /* USER CODE BEGIN TIM10_Init 0 */
-
-  /* USER CODE END TIM10_Init 0 */
-
-  /* USER CODE BEGIN TIM10_Init 1 */
-
-  /* USER CODE END TIM10_Init 1 */
-  htim10.Instance = TIM10;
-  htim10.Init.Prescaler = 8398 - 1;
-  htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 10 - 1;
-  htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM10_Init 2 */
-
-  HAL_TIM_Base_Start_IT(&htim10);
-
-  /* USER CODE END TIM10_Init 2 */
-
 }
 
 /**
@@ -257,41 +285,6 @@ static void MX_USART2_UART_Init(void)
   /* USER CODE BEGIN USART2_Init 2 */
 
   /* USER CODE END USART2_Init 2 */
-
-}
-
-/**
-  * @brief USB_OTG_FS Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USB_OTG_FS_PCD_Init(void)
-{
-
-  /* USER CODE BEGIN USB_OTG_FS_Init 0 */
-
-  /* USER CODE END USB_OTG_FS_Init 0 */
-
-  /* USER CODE BEGIN USB_OTG_FS_Init 1 */
-
-  /* USER CODE END USB_OTG_FS_Init 1 */
-  hpcd_USB_OTG_FS.Instance = USB_OTG_FS;
-  hpcd_USB_OTG_FS.Init.dev_endpoints = 4;
-  hpcd_USB_OTG_FS.Init.speed = PCD_SPEED_FULL;
-  hpcd_USB_OTG_FS.Init.dma_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.phy_itface = PCD_PHY_EMBEDDED;
-  hpcd_USB_OTG_FS.Init.Sof_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.low_power_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.lpm_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.vbus_sensing_enable = DISABLE;
-  hpcd_USB_OTG_FS.Init.use_dedicated_ep1 = DISABLE;
-  if (HAL_PCD_Init(&hpcd_USB_OTG_FS) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USB_OTG_FS_Init 2 */
-
-  /* USER CODE END USB_OTG_FS_Init 2 */
 
 }
 
@@ -363,17 +356,6 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-	// TIM9 is a 1ms timer
-	if (htim == &htim10 )
-	{
-		blinkTimer++;
-		inputPollTimer++;
-		lightbarUpdateTimer++;
-	}
-}
-
 void debugPrint(char _out[])
 {
 	HAL_UART_Transmit_IT(&huart2, (uint8_t *) _out, strlen(_out));
@@ -381,6 +363,150 @@ void debugPrint(char _out[])
 
 
 /* USER CODE END 4 */
+
+/* USER CODE BEGIN Header_StartUSBTask */
+/**
+  * @brief  Function implementing the usbTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_StartUSBTask */
+void StartUSBTask(void *argument)
+{
+  /* init code for USB_DEVICE */
+  MX_USB_DEVICE_Init();
+  /* USER CODE BEGIN 5 */
+
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END 5 */
+}
+
+/* USER CODE BEGIN Header_StartLEDTask */
+/**
+* @brief Function implementing the ledTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartLEDTask */
+void StartLEDTask(void *argument)
+{
+  /* USER CODE BEGIN StartLEDTask */
+  /* Infinite loop */
+  for(;;)
+  {
+	lightbar_update();
+    osDelay(LIGHTBAR_UPDATE_PERIOD_MS);
+  }
+  /* USER CODE END StartLEDTask */
+}
+
+/* USER CODE BEGIN Header_StartRadioTask */
+/**
+* @brief Function implementing the radioTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartRadioTask */
+void StartRadioTask(void *argument)
+{
+  /* USER CODE BEGIN StartRadioTask */
+  /* Infinite loop */
+  for(;;)
+  {
+	//TODO: implement nRF24L01 radio
+    osDelay(10000);
+  }
+  /* USER CODE END StartRadioTask */
+}
+
+/* USER CODE BEGIN Header_StartHeartbeatTask */
+/**
+* @brief Function implementing the heartbeatTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartHeartbeatTask */
+void StartHeartbeatTask(void *argument)
+{
+  /* USER CODE BEGIN StartHeartbeatTask */
+  /* Infinite loop */
+  for(;;)
+  {
+	//toggle pc13
+	HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    osDelay(BLINK_PERIOD_MS);
+  }
+  /* USER CODE END StartHeartbeatTask */
+}
+
+/* USER CODE BEGIN Header_StartUARTTask */
+/**
+* @brief Function implementing the uartTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartUARTTask */
+void StartUARTTask(void *argument)
+{
+  /* USER CODE BEGIN StartUARTTask */
+  uint8_t counter;
+  /* Infinite loop */
+  for(;;)
+  {
+	sprintf(outBuff, "counter: %d\n\r", counter++);
+	debugPrint(outBuff);
+    osDelay(1000);
+  }
+  /* USER CODE END StartUARTTask */
+}
+
+/* USER CODE BEGIN Header_StartButtonInputTask */
+/**
+* @brief Function implementing the buttonInputTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartButtonInputTask */
+void StartButtonInputTask(void *argument)
+{
+  /* USER CODE BEGIN StartButtonInputTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    //read button inputs
+	buttons_update();
+	buttons_process();
+	buttons_getStatus(&temp);
+	lightbar_set(temp);
+    osDelay(INPUT_POLL_PERIOD_MS);
+  }
+  /* USER CODE END StartButtonInputTask */
+}
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM1 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM1) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
