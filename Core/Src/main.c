@@ -377,14 +377,17 @@ void StartUSBTask(void *argument)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
 
+  uint16_t status;
+
   usbInit();
 
   /* Infinite loop */
   for(;;)
   {
 	// Send HID report
-	usbSendIt();
-    osDelay(1000);
+	buttons_getStatus(&status);
+	usbSend(status);
+    osDelay(10);
   }
   /* USER CODE END 5 */
 }

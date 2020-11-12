@@ -25,6 +25,7 @@
 #include "usbd_core.h"
 #include "usbd_desc.h"
 #include "usbd_hid.h"
+#include "usb_hid_keys.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -62,6 +63,8 @@ struct mouseHID_t {
 	  int8_t wheel;
 };
 
+uint8_t HIDkbBuffer[12] = {0};
+
 struct mouseHID_t mouseHID;
 
 void usbInit(void)
@@ -72,11 +75,21 @@ void usbInit(void)
 	mouseHID.wheel = 0;
 }
 
-void usbSendIt(void)
+void usbSend(uint16_t status)
 {
 	// Send HID report
-	mouseHID.x = 10;
-	USBD_HID_SendReport(&hUsbDeviceFS, (uint8_t*)&mouseHID, sizeof(struct mouseHID_t));
+	HIDkbBuffer[2] = (status & 1 << 9) ? KEY_W : 0;
+	HIDkbBuffer[3] = (status & 1 << 8) ? KEY_A : 0;
+	HIDkbBuffer[4] = (status & 1 << 7) ? KEY_S : 0;
+	HIDkbBuffer[5] = (status & 1 << 6) ? KEY_D : 0;
+	HIDkbBuffer[6] = (status & 1 << 5) ? KEY_P : 0;
+	HIDkbBuffer[7] = (status & 1 << 4) ? KEY_M : 0;
+	HIDkbBuffer[8] = (status & 1 << 3) ? KEY_X : 0;
+	HIDkbBuffer[9] = (status & 1 << 2) ? KEY_B : 0;
+	HIDkbBuffer[10] = (status & 1 << 1) ? KEY_Y : 0;
+	HIDkbBuffer[11] = (status & 1 << 0) ? KEY_A : 0;
+
+	USBD_HID_SendReport(&hUsbDeviceFS, HIDkbBuffer, 8);
 }
 
 /* USER CODE END 1 */

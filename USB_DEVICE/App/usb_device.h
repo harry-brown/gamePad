@@ -83,7 +83,7 @@ void MX_USB_DEVICE_Init(void);
  */
 /* USER CODE BEGIN FD */
 void usbInit(void);
-void usbSendIt(void);
+void usbSend(uint16_t status);
 /* USER CODE END FD */
 /**
   * @}
