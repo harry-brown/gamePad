@@ -135,7 +135,7 @@ __ALIGN_BEGIN static uint8_t USBD_HID_CfgFSDesc[USB_HID_CONFIG_DESC_SIZ] __ALIGN
   0xE0,                                               /* bmAttributes: bus powered and Support Remote Wake-up */
   0x32,                                               /* MaxPower 100 mA: this current is used for detecting Vbus */
 
-  /************** Descriptor of Joystick Mouse interface ****************/
+  /************** Descriptor of Game Pad interface ****************/
   /* 09 */
   0x09,                                               /* bLength: Interface Descriptor size */
   USB_DESC_TYPE_INTERFACE,                            /* bDescriptorType: Interface descriptor type */
@@ -143,10 +143,10 @@ __ALIGN_BEGIN static uint8_t USBD_HID_CfgFSDesc[USB_HID_CONFIG_DESC_SIZ] __ALIGN
   0x00,                                               /* bAlternateSetting: Alternate setting */
   0x01,                                               /* bNumEndpoints */
   0x03,                                               /* bInterfaceClass: HID */
-  0x01,                                               /* bInterfaceSubClass : 1=BOOT, 0=no boot */
-  0x01,                                               /* nInterfaceProtocol : 0=none, 1=keyboard, 2=mouse */
+  0x00,                                               /* bInterfaceSubClass : 1=BOOT, 0=no boot */
+  0x00,                                               /* nInterfaceProtocol : 0=none, 1=keyboard, 2=mouse */
   0,                                                  /* iInterface: Index of string descriptor */
-  /******************** Descriptor of Joystick Mouse HID ********************/
+  /******************** Descriptor of Game Pad HID ********************/
   /* 18 */
   0x09,                                               /* bLength: HID Descriptor size */
   HID_DESCRIPTOR_TYPE,                                /* bDescriptorType: HID */
@@ -155,9 +155,9 @@ __ALIGN_BEGIN static uint8_t USBD_HID_CfgFSDesc[USB_HID_CONFIG_DESC_SIZ] __ALIGN
   0x00,                                               /* bCountryCode: Hardware target country */
   0x01,                                               /* bNumDescriptors: Number of HID class descriptors to follow */
   0x22,                                               /* bDescriptorType */
-  HID_GAMEPAD_REPORT_DESC_SIZE,                       /* wItemLength: Total length of Report descriptor */
-  0x00,
-  /******************** Descriptor of Mouse endpoint ********************/
+  LOBYTE(HID_GAMEPAD_REPORT_DESC_SIZE),			      /* wItemLength: Total length of Report descriptor */
+  HIBYTE(HID_GAMEPAD_REPORT_DESC_SIZE),
+  /******************** Descriptor of Game Pad endpoint ********************/
   /* 27 */
   0x07,                                               /* bLength: Endpoint Descriptor size */
   USB_DESC_TYPE_ENDPOINT,                             /* bDescriptorType:*/
@@ -166,7 +166,7 @@ __ALIGN_BEGIN static uint8_t USBD_HID_CfgFSDesc[USB_HID_CONFIG_DESC_SIZ] __ALIGN
   0x03,                                               /* bmAttributes: Interrupt endpoint */
   HID_EPIN_SIZE,                                      /* wMaxPacketSize: 4 Byte max */
   0x00,
-  HID_FS_BINTERVAL,                                   /* bInterval: Polling Interval */
+  HID_FS_BINTERVAL,                                   /* bInterval: Polling Interval (10 ms) */
   /* 34 */
 };
 
@@ -295,81 +295,6 @@ __ALIGN_BEGIN static uint8_t USBD_HID_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_
   0x00,
 };
 
-//__ALIGN_BEGIN static uint8_t HID_MOUSE_ReportDesc[HID_MOUSE_REPORT_DESC_SIZE] __ALIGN_END = {
-//  0x05,   0x01,
-//  0x09,   0x02,
-//  0xA1,   0x01,
-//  0x09,   0x01,
-//
-//  0xA1,   0x00,
-//  0x05,   0x09,
-//  0x19,   0x01,
-//  0x29,   0x03,
-//
-//  0x15,   0x00,
-//  0x25,   0x01,
-//  0x95,   0x03,
-//  0x75,   0x01,
-//
-//  0x81,   0x02,
-//  0x95,   0x01,
-//  0x75,   0x05,
-//  0x81,   0x01,
-//
-//  0x05,   0x01,
-//  0x09,   0x30,
-//  0x09,   0x31,
-//  0x09,   0x38,
-//
-//  0x15,   0x81,
-//  0x25,   0x7F,
-//  0x75,   0x08,
-//  0x95,   0x03,
-//
-//  0x81,   0x06,
-//  0xC0,   0x09,
-//  0x3c,   0x05,
-//  0xff,   0x09,
-//
-//  0x01,   0x15,
-//  0x00,   0x25,
-//  0x01,   0x75,
-//  0x01,   0x95,
-//
-//  0x02,   0xb1,
-//  0x22,   0x75,
-//  0x06,   0x95,
-//  0x01,   0xb1,
-//
-//  0x01,   0xc0
-//};
-//
-//
-//__ALIGN_BEGIN static uint8_t HID_GAMEPAD_ReportDesc[HID_GAMEPAD_REPORT_DESC_SIZE] __ALIGN_END = {
-//	//built using the following resources:
-//		//http://eleccelerator.com/usbdescreqparser/
-//		//https://damogranlabs.com/2018/02/stm32-usb-hid-mouse-keyboard/
-//		//http://ww1.microchip.com/downloads/en/AppNotes/91054c.pdf
-//		//https://www.usb.org/document-library/hid-descriptor-tool
-//
-//		0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
-//		0x09, 0x05,        // Usage (Game Pad)
-//		0xA1, 0x01,        // Collection (Application)
-//		0x05, 0x09,        //   Usage Page (Button)
-//		0x19, 0x01,        //   Usage Minimum (0x01)
-//		0x29, 0x0A,        //   Usage Maximum (0x0A)
-//		0x15, 0x00,        //   Logical Minimum (0)
-//		0x25, 0x01,        //   Logical Maximum (1)
-//		0x75, 0x01,        //   Report Size (1)
-//		0x95, 0x0A,        //   Report Count (10)
-//		0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-//		0xC0,              // End Collection
-//
-//		// 23 bytes
-//
-//};
-
-
 __ALIGN_BEGIN static uint8_t HID_GAMEPAD_ReportDesc[HID_GAMEPAD_REPORT_DESC_SIZE] __ALIGN_END = {
 	//built using the following resources:
 		//http://eleccelerator.com/usbdescreqparser/
@@ -377,43 +302,23 @@ __ALIGN_BEGIN static uint8_t HID_GAMEPAD_ReportDesc[HID_GAMEPAD_REPORT_DESC_SIZE
 		//http://ww1.microchip.com/downloads/en/AppNotes/91054c.pdf
 		//https://www.usb.org/document-library/hid-descriptor-tool
 		//https://community.st.com/s/question/0D50X00009XkYyRSAV/usb-device-hid-keyboard-example
+		//https://eleccelerator.com/tutorial-about-usb-hid-report-descriptors/
+		//https://www.artekit.eu/stm32-usb-gamepad-interface/
 
 		0x05, 0x01,        // Usage Page (Generic Desktop Ctrls)
-		0x09, 0x06,        // Usage (Keyboard)
+		0x09, 0x05,        // Usage (Game Pad)
 		0xA1, 0x01,        // Collection (Application)
-		0x05, 0x07,        //   Usage Page (Kbrd/Keypad)
-		0x19, 0xE0,        //   Usage Minimum (0xE0)
-		0x29, 0xE7,        //   Usage Maximum (0xE7)
+		0x05, 0x09,        //   Usage Page (Button)
+		0x19, 0x01,        //   Usage Minimum (0x01)
+		0x29, 0x40,        //   Usage Maximum (0x40)
 		0x15, 0x00,        //   Logical Minimum (0)
 		0x25, 0x01,        //   Logical Maximum (1)
 		0x75, 0x01,        //   Report Size (1)
-		0x95, 0x08,        //   Report Count (8)
+		0x95, 0x40,        //   Report Count (64)
 		0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-		0x75, 0x08,        //   Report Size (8)
-		0x95, 0x01,        //   Report Count (1)
-		0x81, 0x01,        //   Input (Const,Array,Abs,No Wrap,Linear,Preferred State,No Null Position)
-		0x19, 0x00,        //   Usage Minimum (0x00)
-		0x29, 0x65,        //   Usage Maximum (0x65)
-		0x15, 0x00,        //   Logical Minimum (0)
-		0x25, 0x65,        //   Logical Maximum (101)
-		0x75, 0x08,        //   Report Size (8)
-		0x95, 0x06,        //   Report Count (6)
-		0x81, 0x00,        //   Input (Data,Array,Abs,No Wrap,Linear,Preferred State,No Null Position)
-		0x05, 0x08,        //   Usage Page (LEDs)
-		0x19, 0x01,        //   Usage Minimum (Num Lock)
-		0x29, 0x03,        //   Usage Maximum (Scroll Lock)
-		0x15, 0x00,        //   Logical Minimum (0)
-		0x25, 0x01,        //   Logical Maximum (1)
-		0x75, 0x01,        //   Report Size (1)
-		0x95, 0x03,        //   Report Count (3)
-		0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
-		0x75, 0x05,        //   Report Size (5)
-		0x95, 0x01,        //   Report Count (1)
-		0x91, 0x03,        //   Output (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
 		0xC0,              // End Collection
 
-		// 65 bytes
-
+		// 23 bytes
 };
 
 /**

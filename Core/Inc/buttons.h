@@ -31,6 +31,7 @@ enum button {
 
 void buttons_update(void);
 void buttons_getStatus(uint16_t* status);
+void buttons_getChanged(uint16_t* status);
 void buttons_process(void);
 
 #endif /* INC_BUTTONS_H_ */
